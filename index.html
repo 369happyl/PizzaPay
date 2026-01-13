@@ -1,59 +1,803 @@
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
-  <meta charset="UTF-8">
-  <title>Mini App</title>
-  <style>
-    body {
-      background: #0f172a;
-      color: #e5e7eb;
-      font-family: Arial;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-    }
-    .card {
-      background: #020617;
-      padding: 20px;
-      border-radius: 12px;
-      width: 300px;
-      box-shadow: 0 0 20px #38bdf8;
-    }
-    button {
-      background: #38bdf8;
-      border: none;
-      padding: 8px;
-      width: 100%;
-      border-radius: 6px;
-      cursor: pointer;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PizzaPay Interativo</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --pizza-crust: #d35400;
+            --pizza-cheese: #f1c40f; /* Cheddar */
+            --pizza-sauce: #c0392b;
+            --bg-light: #fdf2e9;
+            --text-dark: #2c3e50;
+            --text-grey: #7f8c8d;
+            --white: #ffffff;
+            --shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Outfit', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+            outline: none;
+        }
+
+        body {
+            background-color: var(--pizza-crust);
+            color: var(--text-dark);
+            height: 100vh;
+            overflow: hidden; /* App feel */
+        }
+
+        .app-container {
+            max-width: 450px;
+            margin: 0 auto;
+            background-color: var(--pizza-crust);
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+        }
+
+        /* --- NOTIFICAÇÃO TOAST --- */
+        #toast {
+            visibility: hidden;
+            min-width: 250px;
+            background-color: #333;
+            color: #fff;
+            text-align: center;
+            border-radius: 50px;
+            padding: 16px;
+            position: fixed;
+            z-index: 1000;
+            left: 50%;
+            transform: translateX(-50%);
+            bottom: 30px;
+            font-size: 14px;
+            opacity: 0;
+            transition: opacity 0.3s, bottom 0.3s;
+        }
+        #toast.show {
+            visibility: visible;
+            opacity: 1;
+            bottom: 90px;
+        }
+
+        /* --- HEADER --- */
+        header {
+            padding: 15px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background-color: var(--pizza-crust);
+            color: white;
+            z-index: 10;
+        }
+
+        .user-info .avatar {
+            width: 40px;
+            height: 40px;
+            background: var(--pizza-sauce);
+            border: 2px solid rgba(255,255,255,0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .search-bar {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 8px 15px;
+            border-radius: 20px;
+            flex-grow: 1;
+            margin: 0 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: 0.2s;
+        }
+        
+        .search-input {
+            background: transparent;
+            border: none;
+            color: white;
+            font-size: 0.9rem;
+            width: 100%;
+        }
+        .search-input::placeholder { color: rgba(255,255,255,0.7); }
+
+        .header-icons i { font-size: 1.2rem; cursor: pointer; padding: 5px; }
+
+        /* --- SCROLLABLE AREA --- */
+        .scroll-content {
+            flex: 1;
+            overflow-y: auto;
+            padding-bottom: 80px; /* Space for navbar */
+            position: relative; /* Para as particulas */
+        }
+        
+        /* --- MAIN CARD --- */
+        .balance-wrapper { padding: 10px 20px 20px; }
+        .card-main {
+            background: var(--white);
+            border-radius: 24px;
+            padding: 25px;
+            position: relative;
+            box-shadow: var(--shadow);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.9rem;
+            color: var(--text-grey);
+            margin-bottom: 15px;
+        }
+        .click-link { cursor: pointer; color: var(--pizza-sauce); font-weight: 600; }
+
+        .balance-value { font-size: 1rem; color: var(--text-grey); }
+        .balance-value span {
+            display: block;
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--text-dark);
+            margin-top: 5px;
+        }
+
+        .yield-info {
+            font-size: 0.8rem;
+            color: #27ae60;
+            background: #eafaf1;
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            margin-top: 5px;
+        }
+
+        .action-btn {
+            background: var(--pizza-cheese);
+            color: var(--text-dark);
+            width: 100%;
+            padding: 14px;
+            border-radius: 12px;
+            text-align: center;
+            margin-top: 20px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: transform 0.1s;
+            box-shadow: 0 4px 0 #f39c12;
+        }
+        .action-btn:active { transform: translateY(4px); box-shadow: none; }
+
+        /* --- WHITE AREA --- */
+        .content-area {
+            background: var(--bg-light);
+            border-radius: 24px 24px 0 0;
+            padding: 25px 20px;
+            min-height: 100%;
+        }
+
+        /* --- SERVICES GRID --- */
+        .services-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        .service-item { cursor: pointer; transition: 0.2s; }
+        .service-item:active { transform: scale(0.95); }
+        
+        .service-icon {
+            height: 55px;
+            width: 55px;
+            margin: 0 auto 8px;
+            background: var(--white);
+            border-radius: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            color: var(--text-dark);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+        .service-icon.highlight { background: var(--pizza-sauce); color: white; }
+        .service-label { font-size: 0.75rem; font-weight: 500; color: var(--text-dark); }
+
+        /* --- LOGO / MINIGAME --- */
+        .pizza-logo {
+            width: 150px;
+            height: 150px;
+            background: #e67e22; /* Borda da massa */
+            border-radius: 50%;
+            position: relative;
+            margin: 20px auto;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+            cursor: pointer;
+            transition: transform 0.1s;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .pizza-logo:active { transform: scale(0.92) rotate(3deg); }
+
+        /* Base de Queijo Cheddar */
+        .cheese-base {
+            width: 135px;
+            height: 135px;
+            background: var(--pizza-cheese);
+            border-radius: 50%;
+            position: relative;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.1);
+            transition: 0.3s;
+        }
+
+        /* INGREDIENTES ESCONDIDOS INICIALMENTE (GAME) */
+        .ingrediente {
+            opacity: 0;
+            transform: scale(0);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .ingrediente.visible {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        /* 2 Fatias de Cheddar (Faixas mais claras) */
+        .cheddar-slice {
+            position: absolute;
+            background: #f4d03f; /* Amarelo mais claro */
+            opacity: 0.8;
+        }
+        .cs1 { width: 100%; height: 25px; top: 35%; transform: rotate(45deg); }
+        .cs2 { width: 100%; height: 25px; top: 35%; transform: rotate(-45deg); }
+
+        /* 4 Calabresas */
+        .pepperoni {
+            position: absolute;
+            width: 24px;
+            height: 24px;
+            background: #c0392b;
+            border-radius: 50%;
+            border: 2px solid #922b21;
+            box-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+            z-index: 2;
+        }
+        .p1 { top: 20px; left: 55px; } /* Norte */
+        .p2 { bottom: 20px; left: 55px; } /* Sul */
+        .p3 { top: 55px; left: 20px; } /* Oeste */
+        .p4 { top: 55px; right: 20px; } /* Leste */
+
+        /* 6 Azeitonas Pretas */
+        .olive {
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            background: #2c3e50;
+            border-radius: 50%;
+            z-index: 3;
+        }
+        .olive::after {
+            content: '';
+            display: block;
+            width: 3px;
+            height: 3px;
+            background: rgba(255,255,255,0.3);
+            border-radius: 50%;
+            margin: 2px;
+        }
+        /* Distribuição */
+        .o1 { top: 40px; left: 40px; }
+        .o2 { top: 40px; right: 40px; }
+        .o3 { bottom: 40px; left: 40px; }
+        .o4 { bottom: 40px; right: 40px; }
+        .o5 { top: 62px; left: 62px; } /* Centro */
+        .o6 { bottom: 15px; left: 62px; } /* Extra */
+
+        /* --- EXTRAS GAME CSS --- */
+        @keyframes floatUp {
+            0% { transform: translateY(0) scale(1); opacity: 1; }
+            100% { transform: translateY(-50px) scale(1.5); opacity: 0; }
+        }
+        
+        .click-particle {
+            position: absolute;
+            font-size: 1.5rem;
+            pointer-events: none;
+            animation: floatUp 0.8s ease-out forwards;
+            z-index: 100;
+        }
+
+        .pizza-complete-anim {
+            animation: spinSuccess 0.5s ease-in-out;
+        }
+        @keyframes spinSuccess {
+            0% { transform: rotate(0deg) scale(1); }
+            50% { transform: rotate(180deg) scale(1.1); }
+            100% { transform: rotate(360deg) scale(1); }
+        }
+
+        /* --- BOTTOM NAV & FAB --- */
+        .bottom-nav {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            background: white;
+            display: flex;
+            justify-content: space-around;
+            padding: 10px 0;
+            border-top: 1px solid #eee;
+            z-index: 20;
+        }
+        .nav-item { 
+            text-align: center; 
+            color: var(--text-grey); 
+            font-size: 0.75rem; 
+            cursor: pointer;
+            padding: 5px 15px;
+            border-radius: 10px;
+        }
+        .nav-item i { font-size: 1.2rem; margin-bottom: 2px; display: block; }
+        .nav-item.active { color: var(--pizza-sauce); background: #fdf2e9; }
+
+        .fab-pay {
+            position: absolute;
+            bottom: 75px;
+            right: 20px;
+            background: var(--text-dark);
+            color: white;
+            padding: 12px 25px;
+            border-radius: 30px;
+            z-index: 15;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .fab-pay:active { transform: scale(0.9); }
+
+        /* --- MODAL (INPUT) --- */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            opacity: 0;
+            pointer-events: none;
+            transition: 0.3s;
+        }
+        .modal-overlay.open { opacity: 1; pointer-events: all; }
+        
+        .modal-card {
+            background: white;
+            padding: 25px;
+            border-radius: 20px;
+            width: 85%;
+            max-width: 350px;
+            text-align: center;
+            transform: translateY(20px);
+            transition: 0.3s;
+        }
+        .modal-overlay.open .modal-card { transform: translateY(0); }
+
+        .modal-input {
+            width: 100%;
+            padding: 15px;
+            font-size: 1.2rem;
+            border: 2px solid #eee;
+            border-radius: 12px;
+            margin: 10px 0;
+            text-align: center;
+            color: var(--text-dark);
+        }
+        .modal-btns { display: flex; gap: 10px; margin-top: 15px; }
+        .btn-cancel { background: #eee; color: #333; }
+        .btn-confirm { background: var(--pizza-sauce); color: white; }
+        .modal-btn { flex: 1; padding: 12px; border: none; border-radius: 10px; font-weight: 600; cursor: pointer; }
+
+        /* --- VIEWS --- */
+        .view-section { display: none; padding-top: 10px; animation: fadeIn 0.3s; }
+        .view-section.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .back-btn {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1rem;
+            margin-bottom: 15px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            padding-left: 20px;
+        }
+        
+        /* Bank View Specifics */
+        .bank-option {
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+        .wallet-display {
+            background: #2c3e50;
+            color: #f1c40f;
+            padding: 15px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+    </style>
 </head>
 <body>
 
-<div class="card">
-  <h2 id="msg">Carregando...</h2>
-  <button onclick="somar()">Somar 2 + 3</button>
-  <p id="res"></p>
+<div class="app-container">
+    
+    <div id="toast">Notificação</div>
+
+    <div class="modal-overlay" id="transaction-modal">
+        <div class="modal-card">
+            <h3 id="modal-title">Título</h3>
+            <p id="modal-desc" style="font-size: 0.9rem; color: #777; margin-top: 5px;">Descrição</p>
+            
+            <div id="recarga-extra-fields" style="display: none;">
+                <input type="tel" id="phone-input" class="modal-input" placeholder="(00) 00000-0000" maxlength="15">
+            </div>
+            
+            <input type="number" id="amount-input" class="modal-input" placeholder="0,00" step="0.01">
+            
+            <div class="modal-btns">
+                <button class="modal-btn btn-cancel" onclick="closeModal()">Cancelar</button>
+                <button class="modal-btn btn-confirm" onclick="confirmTransaction()">Confirmar</button>
+            </div>
+        </div>
+    </div>
+
+    <header>
+        <div class="user-info" onclick="notify('Perfil do Usuário')">
+            <div class="avatar">LBP</div>
+        </div>
+        <div class="search-bar">
+            <i class="fa-solid fa-magnifying-glass" style="color: var(--white)"></i>
+            <input type="text" id="app-search" class="search-input" placeholder="Buscar serviços..." onkeyup="filterServices(this.value)">
+        </div>
+        <div class="header-icons">
+            <i class="fa-regular fa-bell" onclick="notify('Você não tem notificações novas')"></i>
+        </div>
+    </header>
+
+    <div class="scroll-content">
+        
+        <div id="view-home" class="view-section active">
+            <div class="balance-wrapper">
+                <div class="card-main">
+                    <div class="card-header">
+                        <span>Conta PizzaPay</span>
+                        <span class="click-link" onclick="notify('Extrato vazio por enquanto!')">Ver extrato ></span>
+                    </div>
+                    <div class="balance-value">Saldo em conta <br> <span id="main-balance">R$ 0,22</span></div>
+                    <div class="yield-info">Rendendo 102% do Queijo</div>
+                    
+                    <div class="action-btn" onclick="openBank()">
+                        <i class="fa-solid fa-pizza-slice" style="margin-right: 8px;"></i>
+                        Área Pix & Saque
+                    </div>
+                    
+                    <i class="fa-regular fa-eye-slash" onclick="notify('Saldo ocultado (mentirinha)')" style="position: absolute; right: 25px; top: 80px; color: var(--text-dark); cursor: pointer;"></i>
+                </div>
+            </div>
+
+            <div class="content-area">
+                <h3 style="margin-bottom: 20px;">Atalhos do Chef</h3>
+                <div class="services-grid" id="services-container">
+                    <div class="service-item" onclick="notify('Área Pix')">
+                        <div class="service-icon highlight"><i class="fa-brands fa-pix"></i></div>
+                        <span class="service-label">Pix</span>
+                    </div>
+                    <div class="service-item" onclick="notify('Leitor de código de barras')">
+                        <div class="service-icon"><i class="fa-solid fa-barcode"></i></div>
+                        <span class="service-label">Pagar</span>
+                    </div>
+                    <div class="service-item" onclick="openTransaction('recarga')">
+                        <div class="service-icon"><i class="fa-solid fa-mobile-screen"></i></div>
+                        <span class="service-label">Recarga</span>
+                    </div>
+                    <div class="service-item" onclick="notify('Pedidos em breve!')">
+                        <div class="service-icon"><i class="fa-solid fa-utensils"></i></div>
+                        <span class="service-label">Pedidos</span>
+                    </div>
+                </div>
+
+                <div class="card-main" style="border: 1px solid #eee; padding: 15px; display: flex; justify-content: space-between; align-items: center; cursor: pointer;" onclick="openMinigame()">
+                    <div style="display: flex; align-items: center; gap: 15px;">
+                        <i class="fa-solid fa-gamepad" style="font-size: 1.5rem; color: var(--pizza-sauce)"></i>
+                        <div>
+                            <strong>Fábrica de Pizza</strong><br>
+                            <small style="color: #777">Clique para cozinhar</small>
+                        </div>
+                    </div>
+                    <i class="fa-solid fa-chevron-right"></i>
+                </div>
+            </div>
+        </div>
+
+        <div id="view-bank" class="view-section">
+            <button class="back-btn" onclick="switchView('home')">← Voltar para o Início</button>
+            <div class="content-area" style="border-radius: 24px;">
+                <h3>Central Bancária</h3>
+                <div class="wallet-display">
+                    <small style="opacity: 0.8">Dinheiro na Carteira (Mão)</small>
+                    <div style="font-size: 1.8rem; font-weight: bold;" id="wallet-balance">R$ 0,00</div>
+                </div>
+
+                <div class="bank-option">
+                    <div>
+                        <strong>Depositar na Conta</strong><br>
+                        <small>Mova da Carteira para o App</small>
+                    </div>
+                    <button class="action-btn" style="width: auto; margin: 0; padding: 10px 20px;" onclick="openTransaction('deposit')">Depositar</button>
+                </div>
+
+                <div class="bank-option">
+                    <div>
+                        <strong>Sacar da Conta</strong><br>
+                        <small>Mova do App para a Carteira</small>
+                    </div>
+                    <button class="action-btn" style="width: auto; margin: 0; padding: 10px 20px; background: #ecf0f1;" onclick="openTransaction('withdraw')">Sacar</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="view-minigame" class="view-section">
+            <button class="back-btn" onclick="switchView('home')">← Voltar</button>
+            <div class="content-area" style="text-align: center; min-height: 80vh;">
+                <h3>Linha de Montagem</h3>
+                <p id="game-status" style="font-size: 0.9rem; margin-bottom: 20px; color: #7f8c8d;">Toque na massa para começar!</p>
+                
+                <div class="pizza-logo" id="game-pizza" onclick="clickGame(event)">
+                    <div class="cheese-base ingrediente" id="layer-cheese">
+                        <div class="cheddar-slice cs1"></div>
+                        <div class="cheddar-slice cs2"></div>
+                        <div class="pepperoni p1 ingrediente layer-topping"></div>
+                        <div class="pepperoni p2 ingrediente layer-topping"></div>
+                        <div class="pepperoni p3 ingrediente layer-topping"></div>
+                        <div class="pepperoni p4 ingrediente layer-topping"></div>
+                        <div class="olive o1 ingrediente layer-olive"></div>
+                        <div class="olive o2 ingrediente layer-olive"></div>
+                        <div class="olive o3 ingrediente layer-olive"></div>
+                        <div class="olive o4 ingrediente layer-olive"></div>
+                        <div class="olive o5 ingrediente layer-olive"></div>
+                    </div>
+                </div>
+
+                <div style="background: white; padding: 20px; border-radius: 15px; margin-top: 30px; box-shadow: var(--shadow);">
+                    <div style="display: flex; justify-content: space-around; margin-bottom: 10px;">
+                        <div>
+                            <small>Progresso</small>
+                            <div style="font-size: 1.5rem; font-weight: bold;" id="click-counter">0%</div>
+                        </div>
+                        <div>
+                            <small>Ganho</small>
+                            <div style="font-size: 1.5rem; font-weight: bold; color: var(--pizza-sauce);">+ R$ 1,00</div>
+                        </div>
+                    </div>
+                    <div style="width: 100%; background: #eee; height: 10px; border-radius: 5px; overflow: hidden;">
+                        <div id="progress-bar" style="width: 0%; height: 100%; background: var(--pizza-sauce); transition: 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div> 
+
+    <div class="fab-pay" onclick="notify('Função Pagar Rápido')">
+        <span>Pagar</span> <i class="fa-solid fa-qrcode"></i>
+    </div>
+
+    <nav class="bottom-nav">
+        <div class="nav-item active" onclick="switchView('home')"><i class="fa-solid fa-house"></i>Início</div>
+        <div class="nav-item" onclick="notify('Carteira de cartões')"><i class="fa-solid fa-wallet"></i>Carteira</div>
+        <div class="nav-item" onclick="notify('Loja de Pizzas')"><i class="fa-solid fa-store"></i>Shop</div>
+    </nav>
 </div>
 
 <script>
-fetch("http://127.0.0.1:8000/")
-  .then(r => r.json())
-  .then(d => {
-    document.getElementById("msg").innerText = d.msg
-  })
+    // --- ESTADO DO APP ---
+    let state = {
+        account: 0.22,
+        wallet: 0.00,
+        clicks: 0,
+        currentTransaction: null 
+    };
 
-function somar() {
-  fetch("http://127.0.0.1:8000/api/soma?a=2&b=3")
-    .then(r => r.json())
-    .then(d => {
-      document.getElementById("res").innerText =
-        "Resultado: " + d.resultado
-    })
-}
+    const ui = {
+        mainBalance: document.getElementById('main-balance'),
+        walletBalance: document.getElementById('wallet-balance'),
+        clickCounter: document.getElementById('click-counter'),
+        progressBar: document.getElementById('progress-bar'),
+        toast: document.getElementById('toast'),
+        modal: document.getElementById('transaction-modal'),
+        input: document.getElementById('amount-input'),
+        phoneInput: document.getElementById('phone-input'),
+        recargaFields: document.getElementById('recarga-extra-fields'),
+        modalTitle: document.getElementById('modal-title'),
+        modalDesc: document.getElementById('modal-desc'),
+        searchInput: document.getElementById('app-search'),
+        gameStatus: document.getElementById('game-status'),
+        pizzaContainer: document.getElementById('game-pizza')
+    };
+
+    function fmt(val) { return val.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }); }
+
+    function updateUI() {
+        ui.mainBalance.innerText = fmt(state.account);
+        ui.walletBalance.innerText = fmt(state.wallet);
+        let pct = (state.clicks / 10) * 100;
+        ui.clickCounter.innerText = `${pct}%`;
+        ui.progressBar.style.width = `${pct}%`;
+    }
+
+    // --- BUSCA ---
+    function filterServices(term) {
+        term = term.toLowerCase();
+        document.querySelectorAll('.service-item').forEach(item => {
+            const label = item.querySelector('.service-label').innerText.toLowerCase();
+            item.style.display = label.includes(term) ? 'block' : 'none';
+        });
+    }
+
+    // --- NAVEGAÇÃO ---
+    function switchView(viewName) {
+        document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
+        document.getElementById(`view-${viewName}`).classList.add('active');
+        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+        if(viewName === 'home') document.querySelector('.nav-item').classList.add('active');
+        
+        // Reset game if leaving
+        if(viewName !== 'minigame') resetGameVisuals();
+    }
+
+    function openBank() { switchView('bank'); }
+    function openMinigame() { switchView('minigame'); }
+
+    function notify(msg) {
+        ui.toast.innerText = msg;
+        ui.toast.className = "show";
+        setTimeout(() => { ui.toast.className = ""; }, 3000);
+    }
+
+    // --- GAME LOGIC & VISUALS ---
+    function spawnParticle(x, y, char) {
+        const p = document.createElement('div');
+        p.innerText = char;
+        p.className = 'click-particle';
+        p.style.left = x + 'px';
+        p.style.top = y + 'px';
+        document.body.appendChild(p);
+        setTimeout(() => p.remove(), 800);
+    }
+
+    function resetGameVisuals() {
+        state.clicks = 0;
+        updateUI();
+        ui.gameStatus.innerText = "Toque na massa para começar!";
+        // Remove 'visible' class from all ingredients
+        document.querySelectorAll('.ingrediente').forEach(el => el.classList.remove('visible'));
+        ui.pizzaContainer.classList.remove('pizza-complete-anim');
+    }
+
+    function clickGame(e) {
+        state.clicks++;
+        
+        // Coordenadas do clique para a animação
+        const rect = ui.pizzaContainer.getBoundingClientRect();
+        // Fallback pro centro se o clique for estranho
+        const x = e ? e.clientX : rect.left + 75; 
+        const y = e ? e.clientY : rect.top + 75;
+
+        // Lógica de Montagem (Visual)
+        if (state.clicks <= 3) {
+            ui.gameStatus.innerText = "Amassando a massa...";
+            spawnParticle(x, y, "🥟");
+        } else if (state.clicks === 4) {
+            ui.gameStatus.innerText = "Adicionando molho e queijo!";
+            document.getElementById('layer-cheese').classList.add('visible');
+            spawnParticle(x, y, "🧀");
+        } else if (state.clicks > 4 && state.clicks < 7) {
+            spawnParticle(x, y, "🧀");
+        } else if (state.clicks === 7) {
+            ui.gameStatus.innerText = "Colocando Calabresa!";
+            document.querySelectorAll('.layer-topping').forEach(el => el.classList.add('visible'));
+            spawnParticle(x, y, "🥓");
+        } else if (state.clicks === 9) {
+            ui.gameStatus.innerText = "Finalizando com Azeitonas...";
+            document.querySelectorAll('.layer-olive').forEach(el => el.classList.add('visible'));
+            spawnParticle(x, y, "🫒");
+        }
+
+        // Fim do ciclo
+        if (state.clicks >= 10) {
+            state.wallet += 1.00;
+            spawnParticle(x, y, "💵");
+            ui.gameStatus.innerText = "Pizza Pronta! Vendida!";
+            
+            // Animação de sucesso
+            ui.pizzaContainer.classList.add('pizza-complete-anim');
+            
+            setTimeout(() => {
+                notify("R$ 1,00 ganho na carteira!");
+                resetGameVisuals();
+            }, 600);
+        } else {
+            updateUI();
+        }
+    }
+
+    // --- TRANSAÇÕES (INCLUINDO RECARGA) ---
+    function openTransaction(type) {
+        state.currentTransaction = type;
+        ui.input.value = '';
+        ui.phoneInput.value = '';
+        ui.modal.classList.add('open');
+        ui.recargaFields.style.display = (type === 'recarga') ? 'block' : 'none';
+
+        if (type === 'deposit') {
+            ui.modalTitle.innerText = "Depositar Saldo";
+            ui.modalDesc.innerText = `Carteira: ${fmt(state.wallet)}`;
+        } else if (type === 'withdraw') {
+            ui.modalTitle.innerText = "Sacar Dinheiro";
+            ui.modalDesc.innerText = `Conta: ${fmt(state.account)}`;
+        } else if (type === 'recarga') {
+            ui.modalTitle.innerText = "Recarga de Celular";
+            ui.modalDesc.innerText = "Coloque créditos usando seu saldo PizzaPay";
+        }
+    }
+
+    function closeModal() { ui.modal.classList.remove('open'); }
+
+    function confirmTransaction() {
+        const val = parseFloat(ui.input.value);
+        if (isNaN(val) || val <= 0) return notify("Valor inválido!");
+
+        if (state.currentTransaction === 'deposit') {
+            if (val > state.wallet) return notify("Sem dinheiro na carteira!");
+            state.wallet -= val; state.account += val;
+            notify("Depósito realizado!");
+        } else if (state.currentTransaction === 'withdraw') {
+            if (val > state.account) return notify("Saldo insuficiente!");
+            state.account -= val; state.wallet += val;
+            notify("Saque realizado!");
+        } else if (state.currentTransaction === 'recarga') {
+            if (val > state.account) return notify("Saldo insuficiente na conta!");
+            if (ui.phoneInput.value.length < 10) return notify("Número de telefone inválido!");
+            state.account -= val;
+            notify(`Recarga de ${fmt(val)} enviada para ${ui.phoneInput.value}!`);
+        }
+        closeModal();
+        updateUI();
+    }
+
+    updateUI();
 </script>
-
 </body>
 </html>
