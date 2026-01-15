@@ -621,14 +621,40 @@
     </nav>
 </div>
 
+
 <script>
     // --- ESTADO DO APP ---
     let state = {
+        userName: "",
         account: 0.22,
         wallet: 0.00,
         clicks: 0,
         currentTransaction: null 
     };
+
+    // Salva o estado atual no LocalStorage
+    function saveToStorage() {
+        localStorage.setItem('pizzapay_state', JSON.stringify(state));
+    }
+
+    // Carrega os dados salvos quando o app abre
+    function loadFromStorage() {
+        const savedData = localStorage.getItem('pizzapay_state');
+        if (savedData) {
+            state = JSON.parse(savedData);
+        }
+        
+        // Se não tiver nome, pede ao usuário
+        if (!state.userName || state.userName === "") {
+            let nome = prompt("Bem-vindo ao PizzaPay! Qual é o seu nome?");
+            state.userName = nome ? nome : "Chef";
+            saveToStorage();
+        }
+        
+        // Atualiza a sigla/nome no topo
+        const avatar = document.querySelector('.avatar');
+        if(avatar) avatar.innerText = state.userName.substring(0, 3).toUpperCase();
+    }
 
     const ui = {
         mainBalance: document.getElementById('main-balance'),
@@ -655,6 +681,9 @@
         let pct = (state.clicks / 10) * 100;
         ui.clickCounter.innerText = `${pct}%`;
         ui.progressBar.style.width = `${pct}%`;
+        
+        // SALVAMENTO AUTOMÁTICO A CADA MUDANÇA
+        saveToStorage();
     }
 
     // --- BUSCA ---
@@ -701,7 +730,6 @@
         state.clicks = 0;
         updateUI();
         ui.gameStatus.innerText = "Toque na massa para começar!";
-        // Remove 'visible' class from all ingredients
         document.querySelectorAll('.ingrediente').forEach(el => el.classList.remove('visible'));
         ui.pizzaContainer.classList.remove('pizza-complete-anim');
     }
@@ -709,13 +737,10 @@
     function clickGame(e) {
         state.clicks++;
         
-        // Coordenadas do clique para a animação
         const rect = ui.pizzaContainer.getBoundingClientRect();
-        // Fallback pro centro se o clique for estranho
         const x = e ? e.clientX : rect.left + 75; 
         const y = e ? e.clientY : rect.top + 75;
 
-        // Lógica de Montagem (Visual)
         if (state.clicks <= 3) {
             ui.gameStatus.innerText = "Amassando a massa...";
             spawnParticle(x, y, "🥟");
@@ -735,13 +760,10 @@
             spawnParticle(x, y, "🫒");
         }
 
-        // Fim do ciclo
         if (state.clicks >= 10) {
             state.wallet += 1.00;
             spawnParticle(x, y, "💵");
             ui.gameStatus.innerText = "Pizza Pronta! Vendida!";
-            
-            // Animação de sucesso
             ui.pizzaContainer.classList.add('pizza-complete-anim');
             
             setTimeout(() => {
@@ -753,7 +775,7 @@
         }
     }
 
-    // --- TRANSAÇÕES (INCLUINDO RECARGA) ---
+    // --- TRANSAÇÕES ---
     function openTransaction(type) {
         state.currentTransaction = type;
         ui.input.value = '';
@@ -789,7 +811,7 @@
             notify("Saque realizado!");
         } else if (state.currentTransaction === 'recarga') {
             if (val > state.account) return notify("Saldo insuficiente na conta!");
-            if (ui.phoneInput.value.length < 10) return notify("Número de telefone inválido!");
+            if (ui.phoneInput.value.length < 1) return notify("Número de telefone inválido!");
             state.account -= val;
             notify(`Recarga de ${fmt(val)} enviada para ${ui.phoneInput.value}!`);
         }
@@ -797,7 +819,11 @@
         updateUI();
     }
 
-    updateUI();
+    // Inicialização do App
+    loadFromStorage(); 
+    updateUI();        
+
 </script>
+
 </body>
 </html>
